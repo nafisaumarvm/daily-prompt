@@ -71,14 +71,15 @@ def publish_json(
             client.disconnect()
             return
 
-        info = client.publish(topic, body, qos=1)
+        info = client.publish(topic, body, qos=0)
         if info.rc != mqtt.MQTT_ERR_SUCCESS:
             result["error"] = f"MQTT publish error code {info.rc}"
             client.disconnect()
 
     def on_publish(client, userdata, mid, reason_codes=None, properties=None):
         result["ok"] = True
-        result["error"] = f"mqtt://{host}/{topic}"
+        # Clarify: broker accepted the message — the clock must be subscribed to this topic
+        result["error"] = f"Published to HiveMQ topic `{topic}` (clock must use the same MQTT prefix)"
         client.disconnect()
 
     client.on_connect = on_connect

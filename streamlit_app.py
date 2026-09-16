@@ -243,7 +243,13 @@ def sidebar() -> None:
             if st.button("Test connection", use_container_width=True):
                 ok, detail = do_test()
                 if ok:
-                    st.success("Connected — check the clock for “Hello Love!”")
+                    st.success(detail)
+                    if st.session_state.transport.startswith("HiveMQ"):
+                        st.warning(
+                            "Broker accepted the message. If the clock stays on Time "
+                            "and shows nothing, the clock is not subscribed to that topic "
+                            "(wrong MQTT prefix, MQTT not connected on AWTRIX, or HiveMQ permissions)."
+                        )
                 else:
                     st.error(detail)
         with c2:
@@ -256,6 +262,23 @@ def sidebar() -> None:
                         "Advanced & pushed" if ok else f"Advanced, push failed: {detail}"
                     )
                 st.rerun()
+
+        if st.session_state.transport.startswith("HiveMQ"):
+            prefix = (st.session_state.mqtt_prefix or "").strip() or "awtrix_XXXXXX"
+            with st.expander("Clock stuck on Time? Read this"):
+                st.markdown(
+                    f"""
+1. **Streamlit success ≠ clock received it.** It only means HiveMQ got the publish.
+2. On the clock web UI → **MQTT**: must show connected (often a green MQTT indicator).
+3. Prefix in Streamlit must match AWTRIX exactly. We publish to:
+   - `{prefix}/notify`
+   - `{prefix}/custom/daily_question`
+4. Open `http://CLOCK_IP/api/stats` → copy `uid` into **AWTRIX MQTT prefix**.
+5. In **HiveMQ Cloud → Access Management**: allow this user to publish & subscribe on `#` (or at least `{prefix}/#`).
+6. If the display is frozen: power-cycle the Ulanzi. If still stuck, temporarily **disable MQTT** in AWTRIX, save, reboot — normal apps should return — then re-enable with the correct broker settings.
+7. Quick LAN check: switch sidebar to **Local HTTP**, set `192.168.x.x`, Test — if that works, HiveMQ/prefix is the problem.
+                    """
+                )
 
         st.divider()
         st.markdown("### Backup")

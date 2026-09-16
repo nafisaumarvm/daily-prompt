@@ -69,7 +69,36 @@ In the app sidebar choose **HiveMQ MQTT** → **Test connection**.
 
 ## Troubleshooting
 
-- Test fails / clock silent: confirm AWTRIX MQTT shows “connected”
-- Wrong prefix: check `/api/stats` → `uid`
-- Auth errors: recreate HiveMQ credentials; update both clock + Streamlit secrets
-- Works on HTTP locally but not Cloud: you’re still on Local HTTP mode — switch sidebar to HiveMQ MQTT
+### Streamlit says success, but clock shows nothing
+
+That success only means **HiveMQ accepted the publish**. The clock still has to be online on MQTT and subscribed to the **same prefix**.
+
+1. AWTRIX web UI → MQTT → confirm it is **connected** (green MQTT status on the matrix is a good sign).
+2. Open `http://CLOCK_IP/api/stats` and copy `uid` (e.g. `awtrix_9b9304`).
+3. Put that exact value in Streamlit **AWTRIX MQTT prefix** / `AWTRIX_MQTT_PREFIX`.
+4. Topics must be:
+   - `YOUR_PREFIX/notify`
+   - `YOUR_PREFIX/custom/daily_question`
+5. HiveMQ Cloud → **Access Management / Permissions**: grant the MQTT user publish + subscribe on `#` while testing.
+6. Same username/password on **both** the clock and Streamlit.
+
+### Clock stuck on Time / lagging / no other apps
+
+MQTT misconfig can make the ESP32 busy reconnecting.
+
+1. Power-cycle the Ulanzi (unplug / hold power).
+2. In AWTRIX: **disable MQTT** → Save → reboot. Built-in apps (Time, etc.) should animate again.
+3. Re-enable MQTT with host, port `8883`, TLS on, correct user/pass, correct prefix.
+4. Test again from Streamlit.
+
+### Quick proof that the display still works
+
+On the same Wi‑Fi as the clock:
+
+```bash
+curl -X POST "http://CLOCK_IP/api/notify" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Hello Love!","duration":8,"wakeup":true}'
+```
+
+If HTTP works but HiveMQ does not, the problem is MQTT prefix / broker permissions / clock MQTT connection — not Streamlit.
