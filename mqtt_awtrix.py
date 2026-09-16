@@ -7,6 +7,7 @@ import ssl
 import time
 from typing import Any
 
+import certifi
 import paho.mqtt.client as mqtt
 
 from awtrix import hex_to_rgb
@@ -53,7 +54,8 @@ def publish_json(
         protocol=mqtt.MQTTv311,
     )
     client.username_pw_set(username, password or None)
-    client.tls_set(cert_reqs=ssl.CERT_REQUIRED)
+    # Use certifi's CA bundle so HiveMQ TLS works on Streamlit Cloud / macOS
+    client.tls_set(ca_certs=certifi.where(), cert_reqs=ssl.CERT_REQUIRED)
     client.tls_insecure_set(False)
 
     def on_connect(client, userdata, flags, reason_code, properties=None):
