@@ -22,16 +22,17 @@ On the clock web UI (`http://CLOCK_IP`):
 4. Port: `8883`
 5. Enable **SSL / TLS**
 6. Username / password: the HiveMQ user you created
-7. Topic prefix / device prefix: leave as default (often `awtrix_XXXXXX`)
+7. Topic prefix / device prefix: set to **`awtrix`** (lowercase — must match Streamlit)
 8. Save & reboot if asked
 
-Find the exact prefix:
-- AWTRIX **Stats** / API `http://CLOCK_IP/api/stats` → field `uid`  
-  Example: `"uid": "awtrix_9b9304"` → prefix is `awtrix_9b9304`
+Topics this app publishes (correct paths):
+- `awtrix/notify` — pop-up alerts / Test connection
+- `awtrix/custom/question` — persistent daily question app
 
-Topics this app publishes:
-- `{prefix}/notify` — test / fallback
-- `{prefix}/custom/daily_question` — standing daily question app
+Incorrect examples that will **not** show on the clock:
+- `notify` (missing prefix)
+- `Awtrix/notify` (wrong capitalization)
+- `awtrix_9b9304/notify` (only if your AWTRIX Prefix is actually that uid string)
 
 ## 3) Put HiveMQ secrets in Streamlit
 
@@ -42,7 +43,7 @@ HIVEMQ_HOST = "xxxxxxxx.s1.eu.hivemq.cloud"
 HIVEMQ_PORT = "8883"
 HIVEMQ_USERNAME = "your_user"
 HIVEMQ_PASSWORD = "your_password"
-AWTRIX_MQTT_PREFIX = "awtrix_9b9304"
+AWTRIX_MQTT_PREFIX = "awtrix"
 ```
 
 ### Streamlit Community Cloud
@@ -74,11 +75,12 @@ In the app sidebar choose **HiveMQ MQTT** → **Test connection**.
 That success only means **HiveMQ accepted the publish**. The clock still has to be online on MQTT and subscribed to the **same prefix**.
 
 1. AWTRIX web UI → MQTT → confirm it is **connected** (green MQTT status on the matrix is a good sign).
-2. Open `http://CLOCK_IP/api/stats` and copy `uid` (e.g. `awtrix_9b9304`).
-3. Put that exact value in Streamlit **AWTRIX MQTT prefix** / `AWTRIX_MQTT_PREFIX`.
-4. Topics must be:
-   - `YOUR_PREFIX/notify`
-   - `YOUR_PREFIX/custom/daily_question`
+2. On the clock, AWTRIX MQTT **Prefix** should be `awtrix` (lowercase).
+3. Put the same value in Streamlit **AWTRIX MQTT prefix** / `AWTRIX_MQTT_PREFIX`.
+4. Topics must be exactly:
+   - `awtrix/notify`
+   - `awtrix/custom/question`
+   Not `notify`, not `Awtrix/notify`, not `…/daily_question` unless you changed the app name.
 5. HiveMQ Cloud → **Access Management / Permissions**: grant the MQTT user publish + subscribe on `#` while testing.
 6. Same username/password on **both** the clock and Streamlit.
 

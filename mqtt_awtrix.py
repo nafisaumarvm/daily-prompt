@@ -103,10 +103,21 @@ def publish_json(
 
 
 def prefix_for(device_prefix: str) -> str:
-    p = device_prefix.strip().rstrip("/")
+    """AWTRIX MQTT topic root. Must match the Prefix field in the clock MQTT settings."""
+    p = (device_prefix or "").strip().rstrip("/")
     if not p:
-        p = _secret("AWTRIX_MQTT_PREFIX", "awtrix_9b9304")
-    return p
+        p = _secret("AWTRIX_MQTT_PREFIX", "awtrix")
+    # Avoid capitalization typos like "Awtrix/notify"
+    return p.lower()
+
+
+def notify_topic(device_prefix: str) -> str:
+    return f"{prefix_for(device_prefix)}/notify"
+
+
+def custom_topic(device_prefix: str, app_name: str = "question") -> str:
+    name = (app_name or "question").strip().strip("/").lower() or "question"
+    return f"{prefix_for(device_prefix)}/custom/{name}"
 
 
 def test_connection_mqtt(
@@ -117,7 +128,7 @@ def test_connection_mqtt(
     username: str | None = None,
     password: str | None = None,
 ) -> tuple[bool, str]:
-    topic = f"{prefix_for(device_prefix)}/notify"
+    topic = notify_topic(device_prefix)
     return publish_json(
         topic,
         {
@@ -143,8 +154,8 @@ def push_question_mqtt(
     port: int | None = None,
     username: str | None = None,
     password: str | None = None,
+    app_name: str = "question",
 ) -> tuple[bool, str]:
-    prefix = prefix_for(device_prefix)
     payload = {
         "text": text[:120],
         "color": hex_to_rgb(color_hex),
@@ -154,7 +165,7 @@ def push_question_mqtt(
         "wakeup": True,
     }
     ok, detail = publish_json(
-        f"{prefix}/custom/daily_question",
+        custom_topic(device_prefix, app_name),
         payload,
         host=host,
         port=port,
@@ -165,7 +176,7 @@ def push_question_mqtt(
         return True, detail
 
     notify_ok, notify_detail = publish_json(
-        f"{prefix}/notify",
+        notify_topic(device_prefix),
         {
             "text": text[:120],
             "color": hex_to_rgb(color_hex),

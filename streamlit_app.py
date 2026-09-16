@@ -141,7 +141,7 @@ def init_state() -> None:
             "HiveMQ MQTT" if mqtt_configured() else "Local HTTP"
         )
     if "mqtt_prefix" not in st.session_state:
-        st.session_state.mqtt_prefix = _secret("AWTRIX_MQTT_PREFIX", "awtrix_9b9304")
+        st.session_state.mqtt_prefix = _secret("AWTRIX_MQTT_PREFIX", "awtrix")
     if "hivemq_host" not in st.session_state:
         st.session_state.hivemq_host = _secret("HIVEMQ_HOST")
     if "hivemq_user" not in st.session_state:
@@ -224,7 +224,11 @@ def sidebar() -> None:
             st.session_state.mqtt_prefix = st.text_input(
                 "AWTRIX MQTT prefix",
                 value=st.session_state.mqtt_prefix,
-                help="From AWTRIX stats / MQTT settings, e.g. awtrix_9b9304",
+                help="Must match the Prefix in AWTRIX MQTT settings (usually `awtrix`). Topics: awtrix/notify and awtrix/custom/question",
+            )
+            st.caption(
+                f"Publishes to `{st.session_state.mqtt_prefix.strip().lower() or 'awtrix'}/notify` "
+                f"and `…/custom/question`"
             )
         else:
             st.caption("Works only when this Streamlit process can reach the clock IP.")
@@ -264,16 +268,16 @@ def sidebar() -> None:
                 st.rerun()
 
         if st.session_state.transport.startswith("HiveMQ"):
-            prefix = (st.session_state.mqtt_prefix or "").strip() or "awtrix_XXXXXX"
+            prefix = (st.session_state.mqtt_prefix or "").strip().lower() or "awtrix"
             with st.expander("Clock stuck on Time? Read this"):
                 st.markdown(
                     f"""
 1. **Streamlit success ≠ clock received it.** It only means HiveMQ got the publish.
 2. On the clock web UI → **MQTT**: must show connected (often a green MQTT indicator).
-3. Prefix in Streamlit must match AWTRIX exactly. We publish to:
-   - `{prefix}/notify`
-   - `{prefix}/custom/daily_question`
-4. Open `http://CLOCK_IP/api/stats` → copy `uid` into **AWTRIX MQTT prefix**.
+3. Prefix in Streamlit must match AWTRIX exactly (usually lowercase `awtrix`). We publish to:
+   - `{prefix}/notify` ← pop-up test / alerts
+   - `{prefix}/custom/question` ← persistent daily question
+4. In AWTRIX MQTT settings, set **Prefix** to `awtrix` (not `Awtrix`, not bare `notify`).
 5. In **HiveMQ Cloud → Access Management**: allow this user to publish & subscribe on `#` (or at least `{prefix}/#`).
 6. If the display is frozen: power-cycle the Ulanzi. If still stuck, temporarily **disable MQTT** in AWTRIX, save, reboot — normal apps should return — then re-enable with the correct broker settings.
 7. Quick LAN check: switch sidebar to **Local HTTP**, set `192.168.x.x`, Test — if that works, HiveMQ/prefix is the problem.

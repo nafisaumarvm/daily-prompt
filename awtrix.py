@@ -86,7 +86,7 @@ def push_question(
     text: str,
     color_hex: str = "#FF6B8A",
     relay_url: str | None = None,
-    app_name: str = "daily_question",
+    app_name: str = "question",
 ) -> tuple[bool, str]:
     payload = {
         "text": text[:120],
